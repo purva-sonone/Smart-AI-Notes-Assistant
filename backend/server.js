@@ -31,8 +31,12 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 
-const PORT = process.env.PORT || 5000;
+// Export for Vercel
+module.exports = app;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
