@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = window.location.origin.includes('localhost') ? `${window.location.protocol}//${window.location.hostname}:5000/api` : '/api';
 
 // Handle Registration
 document.getElementById('register-form').addEventListener('submit', async (e) => {
