@@ -17,6 +17,13 @@ const UserSchema = new mongoose.Schema({
     created_at: {
         type: Date,
         default: Date.now
+    },
+    streak: {
+        type: Number,
+        default: 0
+    },
+    last_study_date: {
+        type: Date
     }
 });
 

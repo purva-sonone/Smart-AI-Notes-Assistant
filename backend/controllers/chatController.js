@@ -1,6 +1,61 @@
 const Note = require('../models/Note');
+const User = require('../models/User');
+const QuizResult = require('../models/QuizResult');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+exports.saveQuizResult = async (req, res) => {
+    try {
+        const { score, total_questions, topic } = req.body;
+        const quizResult = new QuizResult({
+            user_id: req.user.id,
+            score,
+            total_questions,
+            topic
+        });
+        await quizResult.save();
+
+        // Update Streak
+        const user = await User.findById(req.user.id);
+        const today = new Date().setHours(0,0,0,0);
+        const lastStudy = user.last_study_date ? new Date(user.last_study_date).setHours(0,0,0,0) : null;
+
+        if (!lastStudy || today > lastStudy) {
+            if (lastStudy && today === lastStudy + 86400000) {
+                user.streak += 1;
+            } else if (!lastStudy || today > lastStudy + 86400000) {
+                user.streak = 1;
+            }
+            user.last_study_date = new Date();
+            await user.save();
+        }
+
+        res.json({ quizResult, streak: user.streak });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.getQuizHistory = async (req, res) => {
+    try {
+        const history = await QuizResult.find({ user_id: req.user.id }).sort({ completed_at: -1 }).limit(10);
+        res.json(history);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.getStreak = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('streak last_study_date');
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+};
 
 exports.chatWithNotes = async (req, res) => {
     try {

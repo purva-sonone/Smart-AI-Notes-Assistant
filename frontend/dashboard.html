@@ -44,7 +44,7 @@
         </div>
         <nav class="sidebar-nav" id="sidebar-nav">
             <a href="#" class="active" data-section="overview">
-                <i class="fas fa-home"></i> <span>Overview</span>
+                <i class="fas fa-th-large"></i> <span>Overview</span>
             </a>
             <a href="#" data-section="notes">
                 <i class="fas fa-file-alt"></i> <span>My Notes</span>
@@ -58,77 +58,154 @@
             <a href="#" data-section="syllabus">
                 <i class="fas fa-book"></i> <span>Syllabus</span>
             </a>
+            <a href="#" data-section="profile">
+                <i class="fas fa-user-circle"></i> <span>Profile</span>
+            </a>
         </nav>
         <div class="sidebar-footer">
-            <button class="btn btn-outline btn-block" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
-            </button>
+            <div class="sidebar-profile glass">
+                <div class="profile-info-wrap">
+                    <div class="avatar-container small" onclick="openEmojiPicker(event)">
+                        <div class="avatar" id="sidebar-avatar"><i class="fas fa-user-graduate"></i></div>
+                    </div>
+                    <div class="profile-text">
+                        <h4 id="sidebar-name">Purva</h4>
+                        <p>Student Plan</p>
+                    </div>
+                </div>
+                <div class="profile-actions-inline">
+                    <button onclick="shareWebsite(event)" title="Share"><i class="fas fa-share-alt"></i></button>
+                    <button onclick="logout()" title="Logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
         </div>
     </aside>
 
     <!-- Main Content -->
     <main class="main-content">
         <header class="dashboard-header">
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search notes...">
+            <div class="header-left">
+                <h1 id="welcome-msg">Hi, Krish 👋</h1>
+                <p class="subtext">Ready to learn smarter today?</p>
             </div>
-            <div class="user-profile">
-                <span id="welcome-msg">Hi, Student 👋</span>
-                <div class="profile-dropdown">
-                    <div class="avatar" id="profile-trigger"><i class="fas fa-user-graduate"></i></div>
-                    <div class="dropdown-menu glass" id="profile-menu">
-                        <a href="#" onclick="openEmojiPicker(event)"><i class="fas fa-camera"></i> Change Avatar</a>
-                        <a href="#" onclick="shareWebsite(event)"><i class="fas fa-share-alt"></i> Share with Friends</a>
-                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                    </div>
+            <div class="search-bar-centered">
+                <div class="search-inner">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search your knowledge base...">
                 </div>
             </div>
+            <div class="header-right-empty"></div>
         </header>
 
         <!-- ── OVERVIEW SECTION ── -->
-        <section id="overview-section" class="dash-section">
-            <h2 class="section-heading">Dashboard Overview</h2>
+        <section id="overview-section" class="dash-section active-section">
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="action-btn" onclick="document.getElementById('file-upload').click()">
+                    <div class="icon-wrap purple"><i class="fas fa-plus"></i></div>
+                    <span>Create Note</span>
+                </button>
+                <button class="action-btn" onclick="switchSection('chat')">
+                    <div class="icon-wrap blue"><i class="fas fa-robot"></i></div>
+                    <span>Ask AI</span>
+                </button>
+                <button class="action-btn" onclick="switchSection('quizzes')">
+                    <div class="icon-wrap pink"><i class="fas fa-brain"></i></div>
+                    <span>Generate Quiz</span>
+                </button>
+                <button class="action-btn" onclick="switchSection('syllabus')">
+                    <div class="icon-wrap orange"><i class="fas fa-chart-line"></i></div>
+                    <span>View Progress</span>
+                </button>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
+                    <div class="stat-icon-glow purple"></div>
                     <div class="stat-icon purple"><i class="fas fa-file-alt"></i></div>
-                    <div>
-                        <h3 id="stat-notes">–</h3>
+                    <div class="stat-info">
+                        <h3 id="stat-notes">0</h3>
                         <p>Total Notes</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon pink"><i class="fas fa-brain"></i></div>
-                    <div>
-                        <h3>AI Ready</h3>
-                        <p>Gemini Powered</p>
+                    <div class="stat-icon-glow orange"></div>
+                    <div class="stat-icon orange"><i class="fas fa-fire"></i></div>
+                    <div class="stat-info">
+                        <h3 id="stat-streak">0</h3>
+                        <p>Day Streak</p>
+                        <div class="streak-progress"><div class="progress-fill" style="width: 40%"></div></div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon blue"><i class="fas fa-award"></i></div>
-                    <div>
-                        <h3>Study</h3>
-                        <p>Mode Active</p>
+                    <div class="stat-icon-glow blue"></div>
+                    <div class="stat-icon blue"><i class="fas fa-bolt"></i></div>
+                    <div class="stat-info">
+                        <h3 id="stat-ai-count">24</h3>
+                        <p>AI Usage Count</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-glow pink"></div>
+                    <div class="stat-icon pink"><i class="fas fa-book"></i></div>
+                    <div class="stat-info">
+                        <h3>8</h3>
+                        <p>Subjects Covered</p>
                     </div>
                 </div>
             </div>
 
-            <div class="upload-zone" id="drop-zone">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <h2>Upload Your Notes</h2>
-                <p>Drag & drop PDF, Word, Image, or .txt files here</p>
-                <input type="file" id="file-upload" hidden multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg">
-                <button class="btn btn-primary" onclick="document.getElementById('file-upload').click()">
-                    <i class="fas fa-folder-open"></i> Browse Files
-                </button>
+            <div class="upload-container">
+                <div class="upload-zone glass" id="drop-zone">
+                    <div class="upload-illustration">
+                        <div class="blob-bg"></div>
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h2>Start Learning Smarter 🚀</h2>
+                    <p>Upload notes and generate summaries, quizzes & insights instantly</p>
+                    <input type="file" id="file-upload" hidden multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg">
+                    <button class="btn btn-primary btn-glow" onclick="document.getElementById('file-upload').click()">
+                        <i class="fas fa-folder-open"></i> Browse Files
+                    </button>
+                </div>
             </div>
 
-            <div class="recent-activity">
-                <h3><i class="fas fa-history"></i> Recent Activity</h3>
-                <div class="activity-list">
-                    <div class="activity-item">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Upload a note to get started!</span>
+            <div class="dashboard-bottom-grid">
+                <div class="recent-activity-card glass">
+                    <div class="card-header-flex">
+                        <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                        <a href="#" class="view-all">View All</a>
+                    </div>
+                    <div class="activity-list" id="activity-list">
+                        <div class="activity-item-simple">
+                            <div class="activity-icon"><i class="fas fa-file-pdf"></i></div>
+                            <div class="activity-meta">
+                                <h4>Physics_Ch1.pdf</h4>
+                                <span>2 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-features-showcase">
+                    <h3>What AI Can Do For You</h3>
+                    <div class="feature-mini-grid">
+                        <div class="feature-mini-card glass">
+                            <i class="fas fa-compress-alt"></i>
+                            <h4>Summarize Notes</h4>
+                            <p>Get core insights from 50+ pages in seconds.</p>
+                        </div>
+                        <div class="feature-mini-card glass">
+                            <i class="fas fa-puzzle-piece"></i>
+                            <h4>Generate Quiz</h4>
+                            <p>Test your knowledge with AI-powered MCQs.</p>
+                        </div>
+                        <div class="feature-mini-card glass">
+                            <i class="fas fa-lightbulb"></i>
+                            <h4>Explain Concepts</h4>
+                            <p>Tough topics made easy with ELI5 mode.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -165,7 +242,11 @@
                     </div>
                 </div>
                 <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Ask a question about your notes...">
+                    <input type="file" id="chat-file-upload" hidden accept="image/*,.pdf,.txt">
+                    <button class="btn-icon attachment-btn" onclick="document.getElementById('chat-file-upload').click()" title="Attach File/Image">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="text" id="chat-input" placeholder="Ask a question about your notes or upload an image...">
                     <button class="btn btn-secondary mic-btn" id="voice-chat-btn" title="Speak your notes">
                         <i class="fas fa-microphone"></i>
                     </button>
@@ -214,6 +295,63 @@
                 </button>
             </div>
             <div id="topics-list" class="topics-list"></div>
+        </section>
+
+        <!-- ── PROFILE SECTION ── -->
+        <section id="profile-section" class="dash-section" style="display:none;">
+            <h2 class="section-heading">User Profile & Settings</h2>
+            <div class="profile-page-grid">
+                <div class="profile-card-large glass">
+                    <div class="profile-header-large">
+                        <div class="avatar-large-wrap" onclick="openEmojiPicker(event)">
+                            <div class="avatar-large" id="profile-avatar-display">👨‍🎓</div>
+                            <div class="edit-overlay"><i class="fas fa-camera"></i></div>
+                        </div>
+                        <h2 id="profile-name-display">Purva Sonone</h2>
+                        <p id="profile-email-display">purva@example.com</p>
+                    </div>
+                    
+                    <div class="profile-settings-list">
+                        <div class="setting-item">
+                            <div class="setting-icon"><i class="fas fa-user"></i></div>
+                            <div class="setting-content">
+                                <label>Full Name</label>
+                                <input type="text" id="edit-name" value="Purva Sonone">
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-icon"><i class="fas fa-envelope"></i></div>
+                            <div class="setting-content">
+                                <label>Email Address</label>
+                                <input type="email" id="edit-email" value="purva@example.com" disabled>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="saveProfileChanges()">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+
+                <div class="account-stats-card glass">
+                    <h3>Account Stats</h3>
+                    <div class="account-stat-row">
+                        <span>Account Type</span>
+                        <span class="badge">Student Pro</span>
+                    </div>
+                    <div class="account-stat-row">
+                        <span>Joined On</span>
+                        <span>April 2026</span>
+                    </div>
+                    <div class="account-stat-row">
+                        <span>Total Notes</span>
+                        <span id="profile-stat-notes">0</span>
+                    </div>
+                    <hr style="opacity: 0.1; margin: 1.5rem 0;">
+                    <button class="btn btn-danger btn-block" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout from Session
+                    </button>
+                </div>
+            </div>
         </section>
     </main>
 

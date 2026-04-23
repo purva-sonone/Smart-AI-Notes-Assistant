@@ -15,35 +15,33 @@ if (!token) {
 // Display welcome message
 const welcomeEl = document.getElementById('welcome-msg');
 if (welcomeEl) {
-    welcomeEl.innerText = `Hi, ${user.name || 'Student'} 👋`;
+    const userName = user.name || 'Krish';
+    welcomeEl.innerText = `Hi, ${userName} 👋`;
 }
 
-// ── PROFILE DROPDOWN ──
-const profileTrigger = document.getElementById('profile-trigger');
-const profileMenu = document.getElementById('profile-menu');
+// ── SIDEBAR PROFILE ──
+const sidebarAvatar = document.getElementById('sidebar-avatar');
+const sidebarName = document.getElementById('sidebar-name');
 
-if (profileTrigger) {
-    profileTrigger.innerHTML = savedAvatar;
-    profileTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        profileMenu.classList.toggle('show');
-    });
+if (sidebarAvatar) {
+    sidebarAvatar.innerHTML = savedAvatar;
 }
-
-document.addEventListener('click', () => {
-    if (profileMenu) profileMenu.classList.remove('show');
-});
+if (sidebarName) {
+    sidebarName.innerText = user.name || 'Purva';
+}
 
 // ── SECTION SWITCHING ─────────────────────────────────────────
 function switchSection(sectionId) {
     // Hide all sections
     document.querySelectorAll('.dash-section').forEach(sec => {
+        sec.classList.remove('active-section');
         sec.style.display = 'none';
     });
 
     // Show the target section
     const target = document.getElementById(`${sectionId}-section`);
     if (target) {
+        target.classList.add('active-section');
         target.style.display = 'block';
     } else {
         console.warn(`Section not found: ${sectionId}-section`);
@@ -60,6 +58,9 @@ function switchSection(sectionId) {
 
     // Fetch notes when switching to notes tab
     if (sectionId === 'notes') fetchNotes();
+    
+    // Populate profile if switching to profile
+    if (sectionId === 'profile') populateProfile();
 }
 
 // ── SIDEBAR NAV EVENT LISTENERS ───────────────────────────────
@@ -133,6 +134,10 @@ async function uploadFile(file) {
             if (response.ok) {
                 showToast(`✅ "${file.name}" uploaded & summarized!`);
                 addToActivity(file.name, 'Uploaded & Summarized');
+                updateDashboardStats(); // Refresh stats after upload
+                if (document.getElementById('notes-section').style.display !== 'none') {
+                    fetchNotes(); // Also refresh notes list if currently viewing it
+                }
             } else {
                 showToast(`❌ Upload failed: ${data.msg || 'Unknown error'}`, 'error');
             }
@@ -207,6 +212,10 @@ async function deleteNote(id) {
         });
         document.getElementById(`note-${id}`)?.remove();
         showToast('🗑️ Note deleted.');
+        updateDashboardStats(); // Refresh stats after delete
+        if (document.getElementById('notes-section').style.display !== 'none') {
+            fetchNotes(); // Also refresh notes list if currently viewing it
+        }
     } catch (err) {
         showToast('Failed to delete.', 'error');
     }
@@ -241,6 +250,19 @@ if (sendBtnEl) sendBtnEl.addEventListener('click', sendMessage);
 if (chatInputEl) {
     chatInputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') sendMessage();
+    });
+}
+
+// Attachment handling
+const chatFileInput = document.getElementById('chat-file-upload');
+if (chatFileInput) {
+    chatFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            showToast(`📎 File attached: ${file.name}`);
+            // Add a visual indicator or message to the input
+            chatInputEl.placeholder = `Add text about ${file.name}...`;
+        }
     });
 }
 
@@ -544,14 +566,16 @@ function showUploadProgress(fileName) {
 }
 
 function addToActivity(name, action) {
-    const list = document.querySelector('.activity-list');
+    const list = document.getElementById('activity-list');
     if (!list) return;
     const item = document.createElement('div');
-    item.className = 'activity-item';
+    item.className = 'activity-item-simple';
     item.innerHTML = `
-        <i class="fas fa-file-alt"></i>
-        <span><strong>${name}</strong> — ${action}</span>
-        <span class="activity-time">just now</span>
+        <div class="activity-icon"><i class="fas fa-file-alt"></i></div>
+        <div class="activity-meta">
+            <h4>${name}</h4>
+            <span>${action} • just now</span>
+        </div>
     `;
     list.prepend(item);
 }
@@ -584,10 +608,12 @@ function closeEmojiPicker() {
 }
 
 function selectEmoji(emoji) {
-    const profileTrigger = document.getElementById('profile-trigger');
-    if (profileTrigger) {
-        profileTrigger.innerHTML = emoji;
-    }
+    const sidebarAvatar = document.getElementById('sidebar-avatar');
+    const profileAvatar = document.getElementById('profile-avatar-display');
+    
+    if (sidebarAvatar) sidebarAvatar.innerHTML = emoji;
+    if (profileAvatar) profileAvatar.innerHTML = emoji;
+    
     localStorage.setItem('userAvatar', emoji);
     closeEmojiPicker();
     showToast('Profile picture updated!', 'success');
@@ -623,4 +649,114 @@ function shareWebsite(e) {
         
         showToast('Link copied to clipboard! You can now paste it anywhere.', 'success');
     }
+}
+// ── DASHBOARD STATS ──────────────────────────────────────────
+async function updateDashboardStats() {
+    if (!token) return;
+    try {
+        const res = await fetch(`${API_URL}/notes`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const notes = await res.json();
+        
+        // Update Stats Card
+        const statNotesEl = document.getElementById('stat-notes');
+        if (statNotesEl && Array.isArray(notes)) {
+            statNotesEl.innerText = notes.length;
+        }
+
+        // Update Recent Activity List
+        const activityList = document.getElementById('activity-list');
+        if (activityList && Array.isArray(notes)) {
+            if (notes.length === 0) {
+                activityList.innerHTML = `
+                    <div class="activity-item-simple">
+                        <div class="activity-icon"><i class="fas fa-info-circle"></i></div>
+                        <div class="activity-meta">
+                            <h4>No Activity</h4>
+                            <span>Upload a note to get started!</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Show top 5 most recent notes
+                activityList.innerHTML = notes.slice(0, 5).map(note => `
+                    <div class="activity-item-simple">
+                        <div class="activity-icon"><i class="fas ${getFileIcon(note.file_type)}"></i></div>
+                        <div class="activity-meta">
+                            <h4>${note.file_name}</h4>
+                            <span>Uploaded on ${new Date(note.upload_date).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (err) {
+        console.error('Error fetching stats:', err);
+    }
+}
+
+// Initial stats load
+updateDashboardStats();
+// ── PROFILE PAGE LOGIC ──────────────────────────────────────
+function populateProfile() {
+    if (!user) return;
+    
+    const profileName = document.getElementById('profile-name-display');
+    const profileEmail = document.getElementById('profile-email-display');
+    const editName = document.getElementById('edit-name');
+    const editEmail = document.getElementById('edit-email');
+    const profileAvatar = document.getElementById('profile-avatar-display');
+    const profileStatNotes = document.getElementById('profile-stat-notes');
+    
+    if (profileName) profileName.innerText = user.name || 'Purva Sonone';
+    if (profileEmail) profileEmail.innerText = user.email || 'purva@example.com';
+    if (editName) editName.value = user.name || '';
+    if (editEmail) editEmail.value = user.email || '';
+    if (profileAvatar) profileAvatar.innerHTML = localStorage.getItem('userAvatar') || '👨‍🎓';
+    
+    // Update note count in profile
+    const statNotes = document.getElementById('stat-notes');
+    if (profileStatNotes && statNotes) profileStatNotes.innerText = statNotes.innerText;
+}
+
+function saveProfileChanges() {
+    const newName = document.getElementById('edit-name').value.trim();
+    if (!newName) {
+        showToast('Name cannot be empty!', 'error');
+        return;
+    }
+    
+    // Update local user object
+    user.name = newName;
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    // Update UI elements
+    const sidebarName = document.getElementById('sidebar-name');
+    const welcomeEl = document.getElementById('welcome-msg');
+    const profileName = document.getElementById('profile-name-display');
+    
+    if (sidebarName) sidebarName.innerText = newName;
+    if (welcomeEl) welcomeEl.innerText = `Hi, ${newName} 👋`;
+    if (profileName) profileName.innerText = newName;
+    
+    showToast('Profile updated successfully! ✨');
+}
+
+// ── SEARCH NOTES ─────────────────────────────────────────────
+const searchInput = document.getElementById('search-input');
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const noteCards = document.querySelectorAll('.note-card');
+        
+        noteCards.forEach(card => {
+            const fileName = card.querySelector('h4')?.innerText.toLowerCase() || '';
+            if (fileName.includes(query)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
 }
