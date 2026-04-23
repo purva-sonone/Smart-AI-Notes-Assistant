@@ -35,6 +35,13 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 
+// Database-free test route
+app.get('/api/test', (req, res) => res.json({ 
+    message: 'Backend is ALIVE!',
+    env: process.env.NODE_ENV,
+    mongoSet: !!process.env.MONGO_URI 
+}));
+
 // Export for Vercel
 module.exports = app;
 
