@@ -68,6 +68,8 @@ app.get('/api/test', async (req, res) => {
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting/Disconnected',
         readyState: mongoose.connection.readyState,
         hasUri: !!process.env.MONGO_URI,
+        hasGeminiKey: !!process.env.GEMINI_API_KEY,
+        geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
         uriIssues: {
             hasQuotes,
             hasUnescapedAt
