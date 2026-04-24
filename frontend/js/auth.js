@@ -38,12 +38,17 @@ if (loginForm) {
         e.preventDefault();
         const email = e.target[0].value;
         const password = e.target[1].value;
+        const submitBtn = e.target.querySelector('button');
+        const originalBtnText = submitBtn.innerText;
 
         try {
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Logging in...';
+
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email: email.toLowerCase(), password })
             });
 
             const data = await response.json();
@@ -52,11 +57,14 @@ if (loginForm) {
                 localStorage.setItem('user', JSON.stringify(data.user || {email}));
                 window.location.href = 'dashboard.html';
             } else {
-                alert(data.message || 'Login failed');
+                alert(data.message || 'Login failed: Invalid Credentials');
             }
         } catch (err) {
             console.error('Login Error:', err);
-            alert(`Connection Error: ${err.message}. Backend might not be running or Mongo_URI is invalid.`);
+            alert(`Connection Error: ${err.message}. \n\nPlease check:\n1. Vercel Environment Variables\n2. MongoDB Atlas IP Whitelist (0.0.0.0/0)`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalBtnText;
         }
     });
 }

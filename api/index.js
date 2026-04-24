@@ -37,8 +37,9 @@ const noteRoutes = require('./routes/noteRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const syllabusRoutes = require('./routes/syllabusRoutes');
 
-app.use(async (req, res, next) => {
-    await connectDB();
+// Middleware to ensure DB connection without blocking
+app.use((req, res, next) => {
+    connectDB(); // Start/check connection in background
     next();
 });
 
