@@ -48,7 +48,7 @@ exports.uploadNote = async (req, res) => {
             summary = result.response.text();
         } catch (aiErr) {
             console.warn('Gemini summary failed:', aiErr.message);
-            summary = 'Summary unavailable — check your GEMINI_API_KEY.';
+            summary = `AI Error: ${aiErr.message}`;
         }
 
         const newNote = new Note({
