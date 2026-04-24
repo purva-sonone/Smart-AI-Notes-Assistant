@@ -50,7 +50,14 @@ app.use('/api/syllabus', syllabusRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
-app.get('/api/test', (req, res) => res.json({ message: 'Vercel Backend is Working!' }));
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        message: 'Vercel Backend is Working!',
+        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting/Disconnected',
+        readyState: mongoose.connection.readyState,
+        hasUri: !!process.env.MONGO_URI
+    });
+});
 
 // Global Error Handler
 app.use((err, req, res, next) => {
