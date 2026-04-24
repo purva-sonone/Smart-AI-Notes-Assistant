@@ -6,9 +6,15 @@ exports.register = async (req, res) => {
     let { name, email, password } = req.body;
     if (email) email = email.toLowerCase();
     try {
-        let user = await User.findOne({ email });
+        // Case-insensitive search to find existing users regardless of how they registered
+        let user = await User.findOne({ email: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
         if (user) {
-            return res.status(400).json({ message: 'User already exists' });
+            // Update the stored email to lowercase for future consistency
+            if (user.email !== email) {
+                user.email = email;
+                await user.save();
+            }
+            return res.status(400).json({ message: 'User already exists. Please login instead.' });
         }
         user = new User({ name, email, password });
         const salt = await bcrypt.genSalt(10);
@@ -30,13 +36,20 @@ exports.login = async (req, res) => {
     let { email, password } = req.body;
     if (email) email = email.toLowerCase();
     try {
-        let user = await User.findOne({ email });
+        // Case-insensitive search to match emails stored in any case
+        let user = await User.findOne({ email: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid Credentials' });
+            return res.status(400).json({ message: 'Invalid Credentials - user not found' });
         }
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid Credentials' });
+            return res.status(400).json({ message: 'Invalid Credentials - wrong password' });
+        }
+
+        // Normalize email to lowercase for future logins
+        if (user.email !== email) {
+            user.email = email;
+            await user.save();
         }
         
         const payload = { user: { id: user.id } };
