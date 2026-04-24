@@ -7,7 +7,7 @@ exports.uploadSyllabus = async (req, res) => {
         const { content } = req.body;
         
         // AI parse topics
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const prompt = `Extract a list of main topics and subtopics from the following syllabus content. Return only a comma-separated list of topics.\n\nSyllabus:\n${content}`;
         
         const result = await model.generateContent(prompt);

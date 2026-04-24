@@ -18,10 +18,16 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const connectDB = async () => {
     if (mongoose.connection.readyState >= 1) return;
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('MongoDB Connected');
+        if (!process.env.MONGO_URI) {
+            throw new Error('MONGO_URI is not defined in environment variables');
+        }
+        await mongoose.connect(process.env.MONGO_URI, {
+            serverSelectionTimeoutMS: 5000 // Timeout after 5 seconds instead of 30
+        });
+        console.log('MongoDB Connected Successfully');
     } catch (err) {
         console.error('MongoDB Connection Error:', err.message);
+        // On Vercel, we don't want to crash the whole app, but we want to know it failed
     }
 };
 

@@ -19,4 +19,4 @@ const SyllabusSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Syllabus', SyllabusSchema);
+module.exports = mongoose.models.Syllabus || mongoose.model('Syllabus', SyllabusSchema);
