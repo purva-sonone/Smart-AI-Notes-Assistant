@@ -54,7 +54,10 @@ app.use('/api/syllabus', syllabusRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
-app.get('/api/test', (req, res) => {
+app.get('/api/test', async (req, res) => {
+    // Force connection attempt and wait for result
+    await connectDB();
+    
     // Check if URI might be incorrectly formatted
     const uri = process.env.MONGO_URI || '';
     const hasQuotes = uri.startsWith('"') || uri.startsWith("'");
