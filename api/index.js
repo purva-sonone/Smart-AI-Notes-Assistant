@@ -14,6 +14,8 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+let lastDbError = null;
+
 // Database Connection
 const connectDB = async () => {
     if (mongoose.connection.readyState >= 1) return;
@@ -25,8 +27,10 @@ const connectDB = async () => {
             serverSelectionTimeoutMS: 5000 // Timeout after 5 seconds instead of 30
         });
         console.log('MongoDB Connected Successfully');
+        lastDbError = null;
     } catch (err) {
         console.error('MongoDB Connection Error:', err.message);
+        lastDbError = err.message;
         // On Vercel, we don't want to crash the whole app, but we want to know it failed
     }
 };
@@ -51,11 +55,21 @@ app.use('/api/syllabus', syllabusRoutes);
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 app.get('/api/test', (req, res) => {
+    // Check if URI might be incorrectly formatted
+    const uri = process.env.MONGO_URI || '';
+    const hasQuotes = uri.startsWith('"') || uri.startsWith("'");
+    const hasUnescapedAt = uri.split('@').length > 2; // e.g. user:pass@123@host
+
     res.json({ 
         message: 'Vercel Backend is Working!',
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting/Disconnected',
         readyState: mongoose.connection.readyState,
-        hasUri: !!process.env.MONGO_URI
+        hasUri: !!process.env.MONGO_URI,
+        uriIssues: {
+            hasQuotes,
+            hasUnescapedAt
+        },
+        lastError: lastDbError
     });
 });
 
