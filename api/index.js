@@ -45,5 +45,15 @@ app.use('/api/syllabus', syllabusRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 app.get('/api/test', (req, res) => res.json({ message: 'Vercel Self-Contained Backend is Working!' }));
 
+// Global Error Handler (CRITICAL for Vercel Debugging)
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(500).json({ 
+        error: 'Internal Server Error', 
+        message: err.message,
+        stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack
+    });
+});
+
 // Export the app
 module.exports = app;
