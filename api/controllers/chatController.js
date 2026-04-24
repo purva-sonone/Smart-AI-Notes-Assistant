@@ -67,7 +67,7 @@ exports.chatWithNotes = async (req, res) => {
             context = notes.map(n => n.content).join('\n\n');
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
         
         let systemPrompt = "You are an AI Study Assistant. Help the student understand their notes. CRITICAL: Wrap key formulas, important terms, and crucial concepts in <mark> tags (e.g., <mark>Internet of Things</mark>).";
         if (mode === 'eli10') {
@@ -96,7 +96,7 @@ exports.generateQuiz = async (req, res) => {
         const notes = await Note.find({ _id: { $in: noteIds }, user_id: req.user.id });
         const context = notes.map(n => n.content).join('\n\n');
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
         const prompt = `Based on these notes, generate a practice quiz. 
         IMPORTANT: Return the response ONLY as a JSON array of objects.
         Each object should have: 
