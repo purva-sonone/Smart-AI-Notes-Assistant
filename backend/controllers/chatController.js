@@ -119,12 +119,21 @@ exports.generateQuiz = async (req, res) => {
         const result = await model.generateContent(prompt);
         let quizText = result.response.text();
         
-        // Clean the text in case AI added markdown code blocks
-        quizText = quizText.replace(/```json|```/g, '').trim();
+        // Use a more robust regex to find the JSON array in case AI adds extra text
+        const jsonMatch = quizText.match(/\[\s*{[\s\S]*}\s*\]/);
+        if (jsonMatch) {
+            quizText = jsonMatch[0];
+        }
 
-        res.json({ quiz: JSON.parse(quizText) });
+        try {
+            const quiz = JSON.parse(quizText);
+            res.json({ quiz });
+        } catch (parseErr) {
+            console.error('Quiz JSON Parse Error. Raw text:', quizText);
+            res.status(500).json({ msg: 'AI generated invalid quiz format', error: parseErr.message });
+        }
     } catch (err) {
-        console.error(err.message);
+        console.error('GENERATE QUIZ ERROR:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
