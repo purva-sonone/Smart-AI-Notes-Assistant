@@ -15,40 +15,73 @@ exports.uploadNote = async (req, res) => {
         }
 
         let extractedText = '';
+        let summary = '';
         const buffer = Buffer.from(base64Data, 'base64');
 
-        if (fileType === 'application/pdf') {
-            const data = await pdf(buffer);
-            extractedText = data.text;
-        } else if (
-            fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            fileType === 'application/msword'
-        ) {
-            const data = await mammoth.extractRawText({ buffer });
-            extractedText = data.value;
-        } else if (fileType.startsWith('image/')) {
-            const result = await Tesseract.recognize(buffer, 'eng');
-            extractedText = result.data.text;
-        } else if (fileType === 'text/plain') {
-            extractedText = buffer.toString('utf8');
+        if (fileType.startsWith('image/')) {
+            // For images, use Gemini Vision to do OCR and Summary in one go - MUCH faster than Tesseract
+            try {
+                const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+                const prompt = "Act as a student's study assistant. First, extract all text from this image exactly as it appears. Then, provide a clear, structured summary of the content with key concepts and bullet points. Format your response exactly like this: \nTEXT_START\n[Extracted text here]\nTEXT_END\nSUMMARY_START\n[Summary here]\nSUMMARY_END";
+                
+                const result = await model.generateContent([
+                    prompt,
+                    {
+                        inlineData: {
+                            data: base64Data,
+                            mimeType: fileType
+                        }
+                    }
+                ]);
+                
+                const responseText = result.response.text();
+                
+                // Parse the response
+                const textMatch = responseText.match(/TEXT_START([\s\S]*?)TEXT_END/);
+                const summaryMatch = responseText.match(/SUMMARY_START([\s\S]*?)SUMMARY_END/);
+                
+                extractedText = textMatch ? textMatch[1].trim() : responseText;
+                summary = summaryMatch ? summaryMatch[1].trim() : 'Summary generated from image content.';
+                
+            } catch (imageErr) {
+                console.error('Gemini Vision failed:', imageErr);
+                // Fallback to basic extraction if something goes wrong, though Gemini is usually reliable
+                summary = 'Processing failed — please try again.';
+            }
         } else {
-            return res.status(400).json({ msg: `Unsupported file type: ${fileType}` });
-        }
+            // Handle other file types
+            if (fileType === 'application/pdf') {
+                const data = await pdf(buffer);
+                extractedText = data.text;
+            } else if (
+                fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                fileType === 'application/msword'
+            ) {
+                const data = await mammoth.extractRawText({ buffer });
+                extractedText = data.value;
+            } else if (fileType === 'text/plain') {
+                extractedText = buffer.toString('utf8');
+            } else {
+                return res.status(400).json({ msg: `Unsupported file type: ${fileType}` });
+            }
 
-        if (!extractedText || !extractedText.trim()) {
-            return res.status(400).json({ msg: 'Could not extract any text from file' });
-        }
+            if (!extractedText || !extractedText.trim()) {
+                return res.status(400).json({ msg: 'Could not extract any text from file' });
+            }
 
-        // Generate AI summary
-        let summary = '';
-        try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-            const prompt = `You are a study assistant. Summarize the following student notes in a clear, structured way with key concepts and bullet points:\n\n${extractedText.substring(0, 10000)}`;
-            const result = await model.generateContent(prompt);
-            summary = result.response.text();
-        } catch (aiErr) {
-            console.warn('Gemini summary failed:', aiErr.message);
-            summary = 'Summary unavailable — check your GEMINI_API_KEY.';
+            // Generate AI summary for non-image files
+            try {
+                const model = genAI.getGenerativeModel({ 
+                    model: 'gemini-flash-latest',
+                    generationConfig: { maxOutputTokens: 1000 } // Limit tokens for faster response
+                });
+                const prompt = `Summarize these student notes into a structured format with key concepts and bullet points. Be concise but thorough.\n\nNotes:\n${extractedText.substring(0, 20000)}`;
+                const result = await model.generateContent(prompt);
+                summary = result.response.text();
+            } catch (aiErr) {
+                console.warn('Gemini summary failed:', aiErr.message);
+                summary = 'Summary unavailable — check your GEMINI_API_KEY.';
+            }
         }
 
         const newNote = new Note({

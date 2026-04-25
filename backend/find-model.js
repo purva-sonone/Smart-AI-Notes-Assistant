@@ -1,10 +1,10 @@
+require('dotenv').config();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI('AIzaSyD1H_Su7AUsOW55ORCKYx7mlY1bHhLUZSI');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const test = async () => {
     try {
-        // Try without explicit version or with different model names
-        const models = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro', 'gemini-1.0-pro'];
+        const models = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
         for (const m of models) {
             try {
                 console.log(`Testing ${m}...`);

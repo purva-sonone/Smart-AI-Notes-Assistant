@@ -33,7 +33,7 @@ exports.saveQuizResult = async (req, res) => {
         res.json({ quizResult, streak: user.streak });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 
@@ -43,7 +43,7 @@ exports.getQuizHistory = async (req, res) => {
         res.json(history);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 
@@ -53,7 +53,7 @@ exports.getStreak = async (req, res) => {
         res.json(user);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 
@@ -67,7 +67,10 @@ exports.chatWithNotes = async (req, res) => {
             context = notes.map(n => n.content).join('\n\n');
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-flash-latest',
+            generationConfig: { maxOutputTokens: 1000 }
+        });
         
         let systemPrompt = "You are an AI Study Assistant. Help the student understand their notes. CRITICAL: Wrap key formulas, important terms, and crucial concepts in <mark> tags (e.g., <mark>Internet of Things</mark>).";
         if (mode === 'eli10') {
@@ -96,7 +99,10 @@ exports.generateQuiz = async (req, res) => {
         const notes = await Note.find({ _id: { $in: noteIds }, user_id: req.user.id });
         const context = notes.map(n => n.content).join('\n\n');
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-flash-latest',
+            generationConfig: { maxOutputTokens: 2000 }
+        });
         const prompt = `Based on these notes, generate a practice quiz. 
         IMPORTANT: Return the response ONLY as a JSON array of objects.
         Each object should have: 
@@ -119,6 +125,6 @@ exports.generateQuiz = async (req, res) => {
         res.json({ quiz: JSON.parse(quizText) });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
