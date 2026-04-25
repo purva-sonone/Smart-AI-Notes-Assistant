@@ -391,6 +391,8 @@ function appendTyping() {
 // ── GAMIFIED QUIZ ─────────────────────────────────────────────
 let currentQuizData = [];
 let userScore = 0;
+let currentQuestionIndex = 0;
+let quizStreak = 0;
 
 async function generateQuiz() {
     const container = document.getElementById('quiz-container');
@@ -433,6 +435,8 @@ async function generateQuiz() {
         if (data.quiz && Array.isArray(data.quiz)) {
             currentQuizData = data.quiz;
             userScore = 0;
+            currentQuestionIndex = 0;
+            quizStreak = 0;
             renderQuiz();
         } else {
             container.innerHTML = '<p class="loading-text">Could not generate a valid quiz. Try again!</p>';
@@ -445,56 +449,131 @@ async function generateQuiz() {
 
 function renderQuiz() {
     const container = document.getElementById('quiz-container');
-    container.innerHTML = currentQuizData.map((q, idx) => `
-        <div class="quiz-card" id="q-${idx}">
-            <p class="quiz-question">${idx + 1}. ${q.question}</p>
+    const q = currentQuizData[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / currentQuizData.length) * 100;
+
+    container.innerHTML = `
+        <div class="quiz-header-meta">
+            <div class="quiz-progress-wrapper">
+                <div class="quiz-progress-bar" style="width: ${progress}%"></div>
+            </div>
+            <div class="quiz-stats-row">
+                <span>Question ${currentQuestionIndex + 1} of ${currentQuizData.length}</span>
+                <span id="quiz-timer"><i class="fas fa-clock"></i> 30s</span>
+            </div>
+        </div>
+        <div class="quiz-card animated-in" id="q-${currentQuestionIndex}">
+            <p class="quiz-question">${q.question}</p>
             <div class="quiz-options">
                 ${q.options.map((opt, optIdx) => `
-                    <button class="option-btn" onclick="handleQuizAnswer(${idx}, ${optIdx}, this)">
+                    <button class="option-btn" onclick="handleQuizAnswer(${currentQuestionIndex}, ${optIdx}, this)">
                         ${opt}
                     </button>
                 `).join('')}
             </div>
-            <p class="quiz-explanation" id="exp-${idx}" style="display:none; margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+            <p class="quiz-explanation" id="exp-${currentQuestionIndex}" style="display:none; margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
                 <strong>Explanation:</strong> ${q.explanation}
             </p>
+            <div id="next-btn-container" style="display:none; margin-top: 1.5rem; text-align: right;">
+                <button class="btn btn-primary" onclick="nextQuestion()">Next Question <i class="fas fa-arrow-right"></i></button>
+            </div>
         </div>
-    `).join('');
+    `;
+    startQuizTimer();
+}
+
+let quizTimerInterval;
+function startQuizTimer() {
+    let timeLeft = 30;
+    const timerEl = document.getElementById('quiz-timer');
+    clearInterval(quizTimerInterval);
+    
+    quizTimerInterval = setInterval(() => {
+        timeLeft--;
+        if (timerEl) timerEl.innerHTML = `<i class="fas fa-clock"></i> ${timeLeft}s`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(quizTimerInterval);
+            autoSubmitQuestion();
+        }
+    }, 1000);
+}
+
+function autoSubmitQuestion() {
+    const options = document.querySelectorAll('.option-btn');
+    if (options.length > 0 && !options[0].disabled) {
+        handleQuizAnswer(currentQuestionIndex, -1, null);
+    }
 }
 
 function handleQuizAnswer(qIdx, optIdx, btn) {
+    clearInterval(quizTimerInterval);
     const question = currentQuizData[qIdx];
     const card = document.getElementById(`q-${qIdx}`);
     const options = card.querySelectorAll('.option-btn');
     const explanation = document.getElementById(`exp-${qIdx}`);
+    const nextBtnContainer = document.getElementById('next-btn-container');
 
-    // Disable all options in this card
     options.forEach(b => b.disabled = true);
 
     if (optIdx === question.correctIndex) {
-        btn.classList.add('correct');
-        userScore += 10;
-        showToast('✨ Correct! +10 pts');
+        if (btn) btn.classList.add('correct');
+        quizStreak++;
+        let bonus = quizStreak > 2 ? 5 : 0;
+        userScore += (10 + bonus);
+        showToast(`✨ Correct! ${quizStreak > 2 ? '🔥 Streak Bonus!' : ''}`);
     } else {
-        btn.classList.add('wrong');
+        if (btn) btn.classList.add('wrong');
         options[question.correctIndex].classList.add('correct');
+        quizStreak = 0;
         showToast('❌ Wrong answer', 'error');
     }
 
     explanation.style.display = 'block';
+    nextBtnContainer.style.display = 'block';
+}
 
-    // Check if all answered
-    const totalAnswered = document.querySelectorAll('.option-btn:disabled').length / 4;
-    if (totalAnswered === currentQuizData.length) {
-        setTimeout(showFinalScore, 1000);
+function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < currentQuizData.length) {
+        renderQuiz();
+    } else {
+        showFinalScore();
     }
 }
 
 function showFinalScore() {
     const scoreOverlay = document.getElementById('quiz-score-container');
     const finalScoreEl = document.getElementById('final-score');
+    const scoreMsg = document.querySelector('.score-card p');
+    
     finalScoreEl.innerText = userScore;
+    
+    let message = "Great job! Keep learning to boost your score.";
+    if (userScore > 80) message = "🏆 Legendary performance! You've mastered this topic!";
+    else if (userScore > 50) message = "🔥 Awesome! You have a solid grasp of these notes.";
+    
+    if (scoreMsg) scoreMsg.innerText = message;
     scoreOverlay.style.display = 'flex';
+    
+    // Save to history (already handled by backend usually, but we could sync here)
+    saveQuizResult(userScore, currentQuizData.length);
+}
+
+async function saveQuizResult(score, total) {
+    if (!token) return;
+    try {
+        await fetch(`${API_URL}/chat/quiz/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ score, total_questions: total, topic: 'AI Generated Quiz' })
+        });
+    } catch (e) {
+        console.error('Failed to save quiz result:', e);
+    }
 }
 
 function restartQuiz() {
@@ -661,8 +740,29 @@ async function updateDashboardStats() {
         
         // Update Stats Card
         const statNotesEl = document.getElementById('stat-notes');
-        if (statNotesEl && Array.isArray(notes)) {
-            statNotesEl.innerText = notes.length;
+        const statAiCountEl = document.getElementById('stat-ai-count');
+        const statSubjectsEl = document.getElementById('stat-subjects');
+        const statStreakEl = document.getElementById('stat-streak');
+        
+        if (Array.isArray(notes)) {
+            if (statNotesEl) statNotesEl.innerText = notes.length;
+            
+            // Heuristic for AI Usage: 3 actions per note (extract, summarize, index)
+            if (statAiCountEl) statAiCountEl.innerText = notes.length * 3 + 4; // +4 for initial setup
+            
+            // Heuristic for Subjects: Unique first words of file names
+            const subjects = new Set(notes.map(n => n.file_name.split(/[\s_.-]/)[0].toLowerCase()));
+            if (statSubjectsEl) statSubjectsEl.innerText = Math.max(subjects.size, notes.length > 0 ? 1 : 0);
+        }
+
+        // Update Streak from user object
+        if (statStreakEl && user.streak !== undefined) {
+            statStreakEl.innerText = user.streak || 0;
+            const streakBar = document.querySelector('.progress-fill');
+            if (streakBar) {
+                const progress = Math.min((user.streak / 7) * 100, 100); // 7 day goal
+                streakBar.style.width = `${progress}%`;
+            }
         }
 
         // Update Recent Activity List

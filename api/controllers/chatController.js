@@ -67,7 +67,7 @@ exports.chatWithNotes = async (req, res) => {
             context = notes.map(n => n.content).join('\n\n');
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         
         let systemPrompt = "You are an AI Study Assistant. Help the student understand their notes. CRITICAL: Wrap key formulas, important terms, and crucial concepts in <mark> tags (e.g., <mark>Internet of Things</mark>).";
         if (mode === 'eli10') {
@@ -96,18 +96,19 @@ exports.generateQuiz = async (req, res) => {
         const notes = await Note.find({ _id: { $in: noteIds }, user_id: req.user.id });
         const context = notes.map(n => n.content).join('\n\n');
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-        const prompt = `Based on these notes, generate a practice quiz. 
-        IMPORTANT: Return the response ONLY as a JSON array of objects.
-        Each object should have: 
-        "question" (string), 
-        "options" (array of 4 strings), 
-        "correctIndex" (number 0-3), 
-        "explanation" (string).
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const prompt = `Based on the following study notes, generate an interactive practice quiz.
         
-        Generate 5 high-quality MCQs.
-        
-        Notes:
+        CRITICAL RULES:
+        1. Return ONLY a valid JSON array of objects. No markdown, no extra text.
+        2. Generate exactly 10 high-quality multiple choice questions.
+        3. Each object MUST have:
+           - "question": The question text.
+           - "options": An array of 4 distinct possible answers.
+           - "correctIndex": The index (0-3) of the correct answer in the options array.
+           - "explanation": A brief 1-sentence explanation of why the answer is correct.
+
+        Notes Content:
         ${context}`;
         
         const result = await model.generateContent(prompt);

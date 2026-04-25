@@ -42,7 +42,7 @@ exports.uploadNote = async (req, res) => {
         // Generate AI summary
         let summary = '';
         try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
             const prompt = `You are a study assistant. Summarize the following student notes in a clear, structured way with key concepts and bullet points:\n\n${extractedText.substring(0, 10000)}`;
             const result = await model.generateContent(prompt);
             summary = result.response.text();
