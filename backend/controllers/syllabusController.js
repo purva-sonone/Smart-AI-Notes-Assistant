@@ -24,7 +24,7 @@ exports.uploadSyllabus = async (req, res) => {
         res.json(newSyllabus);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 
@@ -34,7 +34,7 @@ exports.getSyllabus = async (req, res) => {
         res.json(syllabus);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 
@@ -44,6 +44,6 @@ exports.deleteSyllabus = async (req, res) => {
         res.json({ msg: 'Syllabus removed' });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
