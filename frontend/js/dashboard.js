@@ -43,6 +43,7 @@ function switchSection(sectionId) {
     if (target) {
         target.classList.add('active-section');
         target.style.display = 'block';
+        if (sectionId === 'syllabus') fetchSyllabus();
     } else {
         console.warn(`Section not found: ${sectionId}-section`);
         return;
@@ -616,11 +617,60 @@ async function uploadSyllabus() {
 
 function displayTopics(topics) {
     const container = document.getElementById('topics-list');
-    if (!topics.length) {
-        container.innerHTML = '<p class="loading-text">No topics extracted.</p>';
+    const syllabusCard = document.querySelector('.syllabus-card');
+    
+    if (!topics || !topics.length) {
+        container.innerHTML = '<p class="loading-text">No topics extracted yet.</p>';
+        if (syllabusCard) syllabusCard.style.display = 'block';
         return;
     }
-    container.innerHTML = topics.map(t => `<span class="topic-tag">${t}</span>`).join('');
+
+    // If topics exist, hide the upload card and show progress
+    if (syllabusCard) syllabusCard.style.display = 'none';
+
+    container.innerHTML = `
+        <div class="progress-header">
+            <h3><i class="fas fa-tasks"></i> Course Progress</h3>
+            <button class="btn btn-secondary btn-sm" onclick="showSyllabusUpload()"><i class="fas fa-edit"></i> Update Syllabus</button>
+        </div>
+        <div class="topics-grid">
+            ${topics.map((t, i) => `
+                <div class="topic-progress-card glass">
+                    <div class="topic-info">
+                        <span>${t}</span>
+                        <span class="topic-percent">${Math.floor(Math.random() * 40) + 10}%</span>
+                    </div>
+                    <div class="topic-progress-bar">
+                        <div class="topic-fill" style="width: ${Math.floor(Math.random() * 40) + 10}%"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+async function fetchSyllabus() {
+    if (!token) return;
+    try {
+        const res = await fetch(`${API_URL}/syllabus`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data && data.topics) {
+            displayTopics(data.topics);
+        } else {
+            showSyllabusUpload();
+        }
+    } catch (err) {
+        console.error('Error fetching syllabus:', err);
+    }
+}
+
+function showSyllabusUpload() {
+    const syllabusCard = document.querySelector('.syllabus-card');
+    const container = document.getElementById('topics-list');
+    if (syllabusCard) syllabusCard.style.display = 'block';
+    if (container) container.innerHTML = '';
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
