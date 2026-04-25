@@ -443,8 +443,8 @@ async function generateQuiz() {
             container.innerHTML = '<p class="loading-text">Could not generate a valid quiz. Try again!</p>';
         }
     } catch (err) {
-        container.innerHTML = '<p class="loading-text">Failed to generate quiz.</p>';
-        console.error(err);
+        container.innerHTML = `<p class="loading-text">❌ Quiz Error: ${err.message}</p>`;
+        console.error('Quiz generation error:', err);
     }
 }
 
@@ -611,7 +611,8 @@ async function uploadSyllabus() {
             showToast(data.msg || 'Upload failed.', 'error');
         }
     } catch (err) {
-        showToast('❌ Failed to connect to server.', 'error');
+        showToast(`❌ Connection Error: ${err.message}`, 'error');
+        console.error('Syllabus upload error:', err);
     }
 }
 
@@ -663,6 +664,7 @@ async function fetchSyllabus() {
         }
     } catch (err) {
         console.error('Error fetching syllabus:', err);
+        showToast(`❌ Syllabus Sync Error: ${err.message}`, 'error');
     }
 }
 
@@ -843,6 +845,7 @@ async function updateDashboardStats() {
         }
     } catch (err) {
         console.error('Error fetching stats:', err);
+        showToast(`❌ Stats Sync Error: ${err.message}`, 'error');
     }
 }
 
