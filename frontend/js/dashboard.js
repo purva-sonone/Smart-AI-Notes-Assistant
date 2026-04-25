@@ -608,7 +608,7 @@ async function uploadSyllabus() {
             showToast('✅ Syllabus uploaded! Topics extracted by AI.');
             displayTopics(data.topics || []);
         } else {
-            showToast(data.msg || 'Upload failed.', 'error');
+            showToast(data.error || data.msg || 'Upload failed.', 'error');
         }
     } catch (err) {
         showToast(`❌ Connection Error: ${err.message}`, 'error');
